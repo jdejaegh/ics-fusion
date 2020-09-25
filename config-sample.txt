@@ -1,0 +1,15 @@
+[
+    {"url": "str",
+     "name": "str",
+     "encoding": "str",
+     "filters": {
+         "name": {"exclude": "RegEx", "includeOnly": "RegEx", "ignoreCase": true},
+         "description": {"exclude": "RegEx", "includeOnly": "RegEx", "ignoreCase": true}
+     },
+     "modify": {
+         "time": {"shift": {"year": 0, "month": 0, "day": 0, "hour": 0, "minute": 0}},
+         "name": {"addPrefix": "str", "addSuffix": "str"},
+         "description": {"addPrefix": "str", "addSuffix": "str"},
+         "location": {"addPrefix": "str", "addSuffix": "str"}
+     }}
+]
