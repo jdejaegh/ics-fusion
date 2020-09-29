@@ -81,7 +81,7 @@ Only the `url` and the `name` field are mandatory.
 - `addPrefix`: string to add at the beginning of the field
 - `addSuffix`: string to add at the end of the field
 
-If multiple calendars a specified in the configuration list, their events will be merged in the resulting ics feed.
+If multiple calendars are specified in the configuration list, their events will be merged in the resulting ics feed.
 
 ## Usage
 Once the config file is created, the corresponding HTTP endpoint is accessible.  For example, if the file `app/config/my-calendar.json` contains the configuration, the HTTP endpoint will be `http://localhost:8088/my-calendar`.
