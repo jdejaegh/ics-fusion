@@ -76,7 +76,10 @@ def background_cache() -> None:
 
         for entry in config:
             if 'cache' in entry and entry['cache']:
-                cache(entry)
+                try:
+                    cache(entry)
+                except:
+                    print("Could not cache", entry)
     print('Cache renewed', arrow.now().format("YYYY-MM-DD HH:mm:ss"))
 
 
@@ -88,4 +91,4 @@ class CacheThread(threading.Thread):
         print("Starting cache process")
         while True:
             background_cache()
-            time.sleep(10*60)
+            time.sleep(10 * 60)
