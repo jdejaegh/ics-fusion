@@ -21,11 +21,11 @@ def cache(entry: dict) -> None:
     :type entry: dict
     """
 
-    if not os.path.isdir('cache'):
-        os.mkdir('cache')
+    if not os.path.isdir('app/cache'):
+        os.mkdir('app/cache')
 
     url = entry['url']
-    path = "cache/" + sha256(url.encode()).hexdigest() + ".ics"
+    path = "app/cache/" + sha256(url.encode()).hexdigest() + ".ics"
 
     r = requests.get(entry["url"], allow_redirects=True)
     if "encoding" in entry:
@@ -54,7 +54,7 @@ def get_from_cache(entry: dict) -> Calendar:
     """
 
     url = entry['url']
-    path = "cache/" + sha256(url.encode()).hexdigest() + ".ics"
+    path = "app/cache/" + sha256(url.encode()).hexdigest() + ".ics"
     if not os.path.isfile(path):
         print("Not cached")
         raise FileNotFoundError("The calendar is not cached")
