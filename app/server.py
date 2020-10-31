@@ -1,6 +1,7 @@
-from app.tools.tools import *
-from app.tools.caching import *
 from flask import Flask, make_response
+
+from app.tools.caching import *
+from app.tools.tools import *
 
 app = Flask(__name__)
 
