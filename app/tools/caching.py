@@ -66,7 +66,7 @@ def horodate(cal: Calendar, prefix='') -> Calendar:
 
 
 def background_cache() -> None:
-    path = "config"
+    path = "app/config"
     files = [os.path.join(path, f) for f in os.listdir(path)
              if os.path.isfile(os.path.join(path, f)) and f.endswith('.json')]
 

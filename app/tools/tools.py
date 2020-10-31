@@ -77,7 +77,7 @@ from typing import List
 
 from ics import Calendar
 from pathvalidate import sanitize_filename
-from tools.caching import load_cal
+from app.tools.caching import load_cal
 
 
 def filtering(cal: Calendar, filters: dict, field_name: str) -> Calendar:
@@ -312,7 +312,7 @@ def process(path: str) -> Calendar:
     :rtype: Calendar
     """
 
-    o = "config/" + sanitize_filename(path)
+    o = "app/config/" + sanitize_filename(path)
     print("Try to open " + o)
     file = open(o, "r")
     config = json.loads(file.read())
