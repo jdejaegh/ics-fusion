@@ -1,6 +1,6 @@
 from flask import Flask, make_response
 
-from app.tools.caching import *
+from app.tools.caching import CacheThread
 from app.tools.tools import *
 
 app = Flask(__name__)
@@ -22,8 +22,7 @@ def main(calendar):
     return response
 
 
-# TODO find better way to launch periodic caching
-#   Maybe try with https://docs.python.org/3/library/sched.html
 thread = CacheThread()
 thread.start()
+
 app.run(host='0.0.0.0', port=8088)

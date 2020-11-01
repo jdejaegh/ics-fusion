@@ -1,5 +1,6 @@
 import json
 import os
+import sched
 import threading
 import time
 from hashlib import sha256
@@ -9,16 +10,21 @@ import requests
 from ics import Calendar
 
 
-def cache(entry: dict) -> None:
+def cache(entry: dict, scheduler: sched.scheduler = None) -> None:
     """Cache an .ics feed in the app/cache directory.
     Different entries with the same URL will be cached in the same file.
     The cached calendar contains a new line in the description with the current time when cached prefixed by the
     'Cached at' mention
 
 
+
     :param entry: representation of the entry to cache.  This is the Python representation of the corresponding entry
     in the config file
     :type entry: dict
+
+    :param scheduler: scheduler used to relaunch the caching task in the future.  If not scheduler is specified,
+    the task will not be relaunched
+    :type scheduler: sched.scheduler
     """
 
     if not os.path.isdir('app/cache'):
@@ -27,14 +33,25 @@ def cache(entry: dict) -> None:
     url = entry['url']
     path = "app/cache/" + sha256(url.encode()).hexdigest() + ".ics"
 
-    r = requests.get(entry["url"], allow_redirects=True)
-    if "encoding" in entry:
-        cal = Calendar(imports=r.content.decode(encoding=entry["encoding"]))
+    try:
+        r = requests.get(entry["url"], allow_redirects=True)
+    except Exception as e:
+        print(arrow.now().format("YYYY-MM-DD HH:mm:ss"), "Could not cache", entry)
+        print(e)
     else:
-        cal = Calendar(imports=r.content.decode())
+        if "encoding" in entry:
+            cal = Calendar(imports=r.content.decode(encoding=entry["encoding"]))
+        else:
+            cal = Calendar(imports=r.content.decode())
 
-    cal = horodate(cal, 'Cached at')
-    open(path, 'w').writelines(cal)
+        cal = horodate(cal, 'Cached at')
+        open(path, 'w').writelines(cal)
+        print(arrow.now().format("YYYY-MM-DD HH:mm:ss"), "Cached", entry['name'])
+    finally:
+        if scheduler is not None:
+            delay = entry['cache'] if entry['cache'] > 0 else 10
+            delay *= 60
+            scheduler.enter(delay=delay, priority=1, action=cache, argument=(entry, scheduler))
 
 
 def get_from_cache(entry: dict) -> Calendar:
@@ -122,8 +139,12 @@ def horodate(cal: Calendar, prefix='') -> Calendar:
     return cal
 
 
-def background_cache() -> None:
+def start_scheduler(scheduler: sched.scheduler) -> None:
     """Start the caching of every config file found in the app/config directory
+
+
+    :param scheduler: scheduler object to use to schedule the caching
+    :type scheduler: sched.scheduler
     """
 
     path = "app/config"
@@ -135,22 +156,19 @@ def background_cache() -> None:
             config = json.loads(config_file.read())
 
         for entry in config:
-            if 'cache' in entry and entry['cache']:
-                try:
-                    cache(entry)
-                except:
-                    print("Could not cache", entry)
-    print('Cache renewed', arrow.now().format("YYYY-MM-DD HH:mm:ss"))
+            if 'cache' in entry:
+                scheduler.enter(delay=0, priority=1, action=cache, argument=(entry, scheduler))
+
+    scheduler.run()
 
 
 class CacheThread(threading.Thread):
     """Child class of the threading.Thread class to run the caching process every 10 minutes
     """
+
     def __init__(self):
         threading.Thread.__init__(self)
 
     def run(self):
         print("Starting cache process")
-        while True:
-            background_cache()
-            time.sleep(10 * 60)
+        start_scheduler(sched.scheduler(time.time, time.sleep))
