@@ -17,6 +17,7 @@ The JSON configuration file should look like the following.
     {
         "url":"str",
         "name":"str",
+        "cache": 10,
         "encoding":"str",
         "filters":{
             "name":{
@@ -60,16 +61,17 @@ The JSON configuration file should look like the following.
 Only the `url` and the `name` field are mandatory.  
 - `url`: specify the url to find the calendar  
 - `name`: name to identify the calendar
+- `cache`: if present cache the remote calendar according to the interval set in minutes
 - `encoding`: specify the encoding to use  
-
+  
 
 - `filters`: structure defining the filters to apply to the calendar  
 - `name`: filters to apply to the name field of the events
 - `description`: filters to apply to the name field of the events
 - `exclude`: RegEx to describe the events to exclude - cannot be specified with includeOnly
 - `includeOnly`: RegEx to describe the events to include - cannot be specified with exclude
-- `ignoreCase`: if true the RegEx will ignore the case of the field
-
+- `ignoreCase`: if true the RegEx will ignore the case of the field  
+  
 
 - `modify`: structure defining the modifications to the events of the calendar
 - `time`: describe the modifications to apply to the timing of the event
@@ -80,11 +82,11 @@ Only the `url` and the `name` field are mandatory.
 - `location`: modification to apply to the location of the events
 - `addPrefix`: string to add at the beginning of the field
 - `addSuffix`: string to add at the end of the field
-
+  
 If multiple calendars are specified in the configuration list, their events will be merged in the resulting ics feed.
 
 ## Usage
 Once the config file is created, the corresponding HTTP endpoint is accessible.  For example, if the file `app/config/my-calendar.json` contains the configuration, the HTTP endpoint will be `http://localhost:8088/my-calendar`.
 
 ## Limitations
-Currently, the application only merges events of the ics feeds, the alarms and todos are not supported.  There is no mechanism to handle the case where an incoming feed becomes unavailable.
+Currently, the application only merges events of the ics feeds, the alarms and todos are not supported.  
