@@ -73,11 +73,11 @@ Only the url and the name field are mandatory.
 
 import json
 import re
+from typing import List
 
-import requests
 from ics import Calendar
 from pathvalidate import sanitize_filename
-from typing import List
+from app.tools.caching import load_cal
 
 
 def filtering(cal: Calendar, filters: dict, field_name: str) -> Calendar:
@@ -241,11 +241,11 @@ def modify_text(cal: Calendar, modify: dict, field_name: str) -> Calendar:
                         if event.name is not None else change["addSuffix"]
 
                 elif field_name == "description":
-                    event.name = event.description + change["addSuffix"] \
+                    event.description = event.description + change["addSuffix"] \
                         if event.description is not None else change["addSuffix"]
 
                 elif field_name == "location":
-                    event.name = event.location + change["addSuffix"] \
+                    event.location = event.location + change["addSuffix"] \
                         if event.location is not None else change["addSuffix"]
 
     return cal
@@ -312,7 +312,7 @@ def process(path: str) -> Calendar:
     :rtype: Calendar
     """
 
-    o = "config/" + sanitize_filename(path)
+    o = "app/config/" + sanitize_filename(path)
     print("Try to open " + o)
     file = open(o, "r")
     config = json.loads(file.read())
@@ -321,12 +321,8 @@ def process(path: str) -> Calendar:
     data = []
 
     for entry in config:
-        print("Getting " + entry["name"])
-        r = requests.get(entry["url"], allow_redirects=True)
-        if "encoding" in entry:
-            cal = Calendar(imports=r.content.decode(encoding=entry["encoding"]))
-        else:
-            cal = Calendar(imports=r.content.decode())
+
+        cal = load_cal(entry)
 
         if "filters" in entry:
             cal = apply_filters(cal, entry["filters"])

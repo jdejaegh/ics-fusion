@@ -131,4 +131,4 @@ dmypy.json
 # Pyre type checker
 .pyre/
 app/config/calendar.json
-app/config/calendar.json
+/app/cache/
