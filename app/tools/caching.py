@@ -5,9 +5,11 @@ import threading
 import time
 from hashlib import sha256
 
+import traceback
 import arrow
 import requests
 from ics import Calendar
+from tatsu.exceptions import FailedParse
 
 
 def cache(entry: dict, scheduler: sched.scheduler = None) -> None:
@@ -27,18 +29,15 @@ def cache(entry: dict, scheduler: sched.scheduler = None) -> None:
     :type scheduler: sched.scheduler
     """
 
-    if not os.path.isdir('app/cache'):
-        os.mkdir('app/cache')
-
-    url = entry['url']
-    path = "app/cache/" + sha256(url.encode()).hexdigest() + ".ics"
-
     try:
+        if not os.path.isdir('app/cache'):
+            os.mkdir('app/cache')
+
+        url = entry['url']
+        path = "app/cache/" + sha256(url.encode()).hexdigest() + ".ics"
+
         r = requests.get(entry["url"], allow_redirects=True)
-    except Exception as e:
-        print(arrow.now().format("YYYY-MM-DD HH:mm:ss"), "Could not cache", entry)
-        print(e)
-    else:
+
         if "encoding" in entry:
             cal = Calendar(imports=r.content.decode(encoding=entry["encoding"]))
         else:
@@ -47,6 +46,16 @@ def cache(entry: dict, scheduler: sched.scheduler = None) -> None:
         cal = horodate(cal, 'Cached at')
         open(path, 'w').writelines(cal)
         print(arrow.now().format("YYYY-MM-DD HH:mm:ss"), "Cached", entry['name'])
+
+    except FailedParse:
+        print("Could not parse", entry['name'])
+
+    # Save stack trace when an unknown error occurs
+    except Exception as e:
+        with open("error " + arrow.now().format("YYYY-MM-DD HH:mm:ss")+".txt", 'w') as file:
+            file.write(arrow.now().format("YYYY-MM-DD HH:mm:ss") + "\nCould not cache : " + str(entry))
+            file.write(str(e))
+            file.write(str(traceback.format_exc()))
     finally:
         if scheduler is not None:
             delay = entry['cache'] if entry['cache'] > 0 else 10
