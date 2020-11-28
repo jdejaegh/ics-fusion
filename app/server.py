@@ -1,7 +1,7 @@
 from flask import Flask, make_response
 
-from app.tools.caching import CacheThread
-from app.tools.tools import *
+from tools.caching import CacheThread
+from tools.tools import *
 
 app = Flask(__name__)
 

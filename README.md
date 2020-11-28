@@ -7,6 +7,22 @@ ICS Fusion is written in Python and using `Flask` to provide the HTTP endpoint. 
 
 Launch the `app/server.py` file to start the application.
 
+### Building the image
+ICS Fusion can be built as a Docker image. To do so, type :
+
+`docker build --tag ics-fusion:1.0 .`
+
+in the main folder of Fusion ICS.
+
+### Running the container
+To run the container, type:
+
+`docker run --publish PORT:8088 --detach --name ics --volume DIRECTORY:/usr/src/ics/app/config ics-fusion:1.0`
+
+Where:
+* `PORT` is the port you want to expose on your host machine.
+* `DIRECTORY` is the path to your config directory.
+
 ## Configuration
 To create a new feed in the application, create a file with the `.json` extension in the  `app/config` folder.  The name of the configuration file will be used to create a new endpoint to serve the feed.
 
