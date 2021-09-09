@@ -16,6 +16,8 @@ def main(calendar):
         result = str(process(conf))
         response = make_response(result, 200)
         response.headers["Content-Disposition"] = "attachment; filename=calendar.ics"
+        response.headers["Content-Type"] = "text/calendar; charset=utf-8"
+
     except FileNotFoundError:
         response = make_response("Calendar not cached", 425)
 
