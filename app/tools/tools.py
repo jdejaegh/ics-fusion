@@ -73,11 +73,14 @@ Only the url and the name field are mandatory.
 
 import json
 import re
+import arrow
+import os
+from hashlib import sha256
 from typing import List
 
+import requests
 from ics import Calendar
 from pathvalidate import sanitize_filename
-from tools.caching import load_cal
 
 
 def filtering(cal: Calendar, filters: dict, field_name: str) -> Calendar:
@@ -299,11 +302,12 @@ def merge(cals: List[Calendar]) -> Calendar:
     return result
 
 
-def process(path: str) -> Calendar:
+def process(path: str, from_cache: bool = True) -> Calendar:
     """Open a config file from the specified path, download the calendars,
     apply the filters, modify and merge the calendars as specified in the config file
 
 
+    :param from_cache:
     :param path: name of the file to open.  The file should be in the config/ folder
     :type path: str
 
@@ -311,25 +315,120 @@ def process(path: str) -> Calendar:
     :return: the resulting calendar
     :rtype: Calendar
     """
+    print("app/cache/" + sanitize_filename(path).rstrip(".json") + ".ics")
+    if from_cache and os.path.isfile("app/cache/" + sanitize_filename(path).rstrip(".json") + ".ics"):
+        with open("app/cache/" + sanitize_filename(path).rstrip(".json") + ".ics") as file:
+            data = file.read()
+        print("Serving precomputed file")
+        return data #Calendar(imports=data)
 
-    o = "app/config/" + sanitize_filename(path)
-    print("Try to open " + o)
-    file = open(o, "r")
-    config = json.loads(file.read())
-    file.close()
+    else:
+        o = "app/config/" + sanitize_filename(path)
+        print("Try to open " + o)
+        file = open(o, "r")
+        config = json.loads(file.read())
+        file.close()
 
-    data = []
+        data = []
 
-    for entry in config:
+        for entry in config:
 
-        cal = load_cal(entry)
+            cal = load_cal(entry)
 
-        if "filters" in entry:
-            cal = apply_filters(cal, entry["filters"])
+            if "filters" in entry:
+                cal = apply_filters(cal, entry["filters"])
 
-        if "modify" in entry:
-            cal = apply_modify(cal, entry["modify"])
+            if "modify" in entry:
+                cal = apply_modify(cal, entry["modify"])
 
-        data.append(cal)
+            data.append(cal)
 
-    return merge(data)
+        return merge(data)
+
+
+def get_from_cache(entry: dict) -> Calendar:
+    """Retrieve the entry from cache.  If the entry is not found, an exception is raised
+
+
+    :param entry: representation of the entry to cache.  This is the Python representation of the corresponding entry
+    in the config file
+    :type entry: dict
+
+
+    :return: the corresponding calendar in cache
+    :rtype: Calendar
+
+
+    :raises FileNotfoundError: if the entry has not been cached before
+    """
+
+    url = entry['url']
+    path = "app/cache/" + sha256(url.encode()).hexdigest() + ".ics"
+    if not os.path.isfile(path):
+        print("Not cached")
+        raise FileNotFoundError("The calendar is not cached")
+
+    with open(path, 'r') as file:
+        data = file.read()
+
+    return Calendar(imports=data)
+
+
+def load_cal(entry: dict) -> Calendar:
+    """Load the calendar from the cache or from remote according to the entry.  If the calendar is supposed to be in
+    cached but could not be found in cache, an error is thrown
+
+
+    :param entry: representation of the entry to cache.  This is the Python representation of the corresponding entry
+    in the config file
+    :type entry: dict
+
+
+    :return: the calendar corresponding to the entry
+    :rtype: Calendar
+
+
+    :raises FileNotfoundError: if the entry was supposed to be cached but has not been cached before
+    """
+
+    if "cache" in entry and entry["cache"]:
+        print("Getting", entry["name"], "from cache")
+        try:
+            return get_from_cache(entry)
+        except FileNotFoundError:
+            return Calendar()
+
+    else:
+        print("Getting", entry["name"], "from remote")
+        r = requests.get(entry["url"], allow_redirects=True)
+        if "encoding" in entry:
+            cal = Calendar(imports=r.content.decode(encoding=entry["encoding"]))
+        else:
+            cal = Calendar(imports=r.content.decode())
+
+        cal = horodate(cal, 'Downloaded at')
+        return cal
+
+
+def horodate(cal: Calendar, prefix='') -> Calendar:
+    """Add a new line at the end of the description of every event in the calendar with the current time prefixed by
+    the prefix parameter and a space
+    The date is added with the following format: YYYY-MM-DD HH:mm:ss
+
+
+    :param cal: calendar to process
+    :type cal: Calendar
+
+    :param prefix: the prefix to add in front of the date
+    :type prefix: str
+
+
+    :return: the modified calendar
+    :rtype: Calendar
+    """
+    now = arrow.now().format("YYYY-MM-DD HH:mm:ss")
+    for event in cal.events:
+        event.description = event.description + '\n' + prefix + ' ' + now \
+            if event.description is not None else prefix + ' ' + now
+
+    return cal

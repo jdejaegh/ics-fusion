@@ -10,6 +10,7 @@ import arrow
 import requests
 from ics import Calendar
 from tatsu.exceptions import FailedParse
+from tools.tools import horodate, process
 
 
 def cache(entry: dict, scheduler: sched.scheduler = None) -> None:
@@ -63,89 +64,53 @@ def cache(entry: dict, scheduler: sched.scheduler = None) -> None:
             scheduler.enter(delay=delay, priority=1, action=cache, argument=(entry, scheduler))
 
 
-def get_from_cache(entry: dict) -> Calendar:
-    """Retrieve the entry from cache.  If the entry is not found, an exception is raised
+def precompute(config: str, scheduler: sched.scheduler = None) -> None:
+    """Precompute a configuration file result to serve it faster when it is requested.  This function
+    should be used with a scheduler to be repeated over time.
 
+    :param config: name of the configuration file to precompute the result for
+    :type config: str
 
-    :param entry: representation of the entry to cache.  This is the Python representation of the corresponding entry
-    in the config file
-    :type entry: dict
-
-
-    :return: the corresponding calendar in cache
-    :rtype: Calendar
-
-
-    :raises FileNotfoundError: if the entry has not been cached before
+    scheduler used to relaunch the precomputing task in the future.  If not scheduler is specified,
+    the task will not be relaunched
+    :type scheduler: sched.scheduler
     """
+    try:
+        cal = process(os.path.basename(config), False)
+        path = "app/cache/" + os.path.basename(config).rstrip('.json') + ".ics"
+        open(path, 'w').writelines(cal)
+        print(arrow.now().format("YYYY-MM-DD HH:mm:ss"), "Precomputed", os.path.basename(config).rstrip('.json'))
 
-    url = entry['url']
-    path = "app/cache/" + sha256(url.encode()).hexdigest() + ".ics"
-    if not os.path.isfile(path):
-        print("Not cached")
-        raise FileNotFoundError("The calendar is not cached")
-
-    with open(path, 'r') as file:
-        data = file.read()
-
-    return Calendar(imports=data)
-
-
-def load_cal(entry: dict) -> Calendar:
-    """Load the calendar from the cache or from remote according to the entry.  If the calendar is supposed to be in
-    cached but could not be found in cache, an error is thrown
-
-
-    :param entry: representation of the entry to cache.  This is the Python representation of the corresponding entry
-    in the config file
-    :type entry: dict
+    except Exception as e:
+        with open("error " + arrow.now().format("YYYY-MM-DD HH:mm:ss")+".txt", 'w') as file:
+            file.write(arrow.now().format("YYYY-MM-DD HH:mm:ss") + "\nCould not precompute : " + str(config))
+            file.write(str(e))
+            file.write(str(traceback.format_exc()))
+    finally:
+        if scheduler is not None:
+            delay = get_min_cache(config)
+            delay *= 60
+            scheduler.enter(delay=delay, priority=1, action=precompute, argument=(config, scheduler))
 
 
-    :return: the calendar corresponding to the entry
-    :rtype: Calendar
+def get_min_cache(path: str) -> float:
+    """Get the minimum caching time of all the entries in a config file.
 
+    :param path: path of the config file to use
+    :type path: str
 
-    :raises FileNotfoundError: if the entry was supposed to be cached but has not been cached before
+    :return: float number representing the smallest caching time.
     """
+    result = float('inf')
 
-    if "cache" in entry and entry["cache"]:
-        print("Getting", entry["name"], "from cache")
-        return get_from_cache(entry)
+    with open(path, 'r') as config_file:
+        file = json.loads(config_file.read())
 
-    else:
-        print("Getting", entry["name"], "from remote")
-        r = requests.get(entry["url"], allow_redirects=True)
-        if "encoding" in entry:
-            cal = Calendar(imports=r.content.decode(encoding=entry["encoding"]))
-        else:
-            cal = Calendar(imports=r.content.decode())
+    for entry in file:
+        if 'cache' in entry and entry['cache'] < result:
+            result = entry['cache']
 
-        cal = horodate(cal, 'Downloaded at')
-        return cal
-
-
-def horodate(cal: Calendar, prefix='') -> Calendar:
-    """Add a new line at the end of the description of every event in the calendar with the current time prefixed by
-    the prefix parameter and a space
-    The date is added with the following format: YYYY-MM-DD HH:mm:ss
-
-
-    :param cal: calendar to process
-    :type cal: Calendar
-
-    :param prefix: the prefix to add in front of the date
-    :type prefix: str
-
-
-    :return: the modified calendar
-    :rtype: Calendar
-    """
-    now = arrow.now().format("YYYY-MM-DD HH:mm:ss")
-    for event in cal.events:
-        event.description = event.description + '\n' + prefix + ' ' + now \
-            if event.description is not None else prefix + ' ' + now
-
-    return cal
+    return result
 
 
 def start_scheduler(scheduler: sched.scheduler) -> None:
@@ -167,6 +132,9 @@ def start_scheduler(scheduler: sched.scheduler) -> None:
         for entry in config:
             if 'cache' in entry:
                 scheduler.enter(delay=0, priority=1, action=cache, argument=(entry, scheduler))
+
+        if get_min_cache(file) < float('inf'):
+            scheduler.enter(delay=get_min_cache(file)*60, priority=1, action=precompute, argument=(file, scheduler))
 
     scheduler.run()
 
