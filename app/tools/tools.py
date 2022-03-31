@@ -320,7 +320,7 @@ def process(path: str, from_cache: bool = True) -> Calendar:
         with open("app/cache/" + sanitize_filename(path).rstrip(".json") + ".ics") as file:
             data = file.read()
         print("Serving precomputed file")
-        return data #Calendar(imports=data)
+        return Calendar(imports=data)
 
     else:
         o = "app/config/" + sanitize_filename(path)
