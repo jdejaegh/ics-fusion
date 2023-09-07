@@ -132,3 +132,7 @@ dmypy.json
 .pyre/
 app/config/calendar.json
 /app/cache/
+
+#development directories
+/app/config/
+.vscode
