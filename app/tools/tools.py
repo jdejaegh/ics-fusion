@@ -34,15 +34,18 @@ The JSON configuration file used in this module has the following structure
             },
             "name":{
                 "addPrefix":"str",
-                "addSuffix":"str"
+                "addSuffix":"str",
+                "redactAs":"str"
             },
             "description":{
                 "addPrefix":"str",
-                "addSuffix":"str"
+                "addSuffix":"str",
+                "redactAs":"str"
             },
             "location":{
                 "addPrefix":"str",
-                "addSuffix":"str"
+                "addSuffix":"str",
+                "redactAs":"str"
             }
         }
     }
@@ -69,6 +72,7 @@ Only the url and the name field are mandatory.
 - location: modification to apply to the location of the events
 - addPrefix: string to add at the beginning of the field
 - addSuffix: string to add at the end of the field
+- redactAs: string to replace the field with
 """
 
 import json
@@ -250,6 +254,18 @@ def modify_text(cal: Calendar, modify: dict, field_name: str) -> Calendar:
                 elif field_name == "location":
                     event.location = event.location + change["addSuffix"] \
                         if event.location is not None else change["addSuffix"]
+                        
+        if "redactAs" in change:
+            for event in cal.events:
+
+                if field_name == "name":
+                    event.name = change["redactAs"]
+
+                elif field_name == "description":
+                    event.description = change["redactAs"]
+
+                elif field_name == "location":
+                    event.location = change["redactAs"]
 
     return cal
 

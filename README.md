@@ -98,6 +98,7 @@ Only the `url` and the `name` field are mandatory.
 - `location`: modification to apply to the location of the events
 - `addPrefix`: string to add at the beginning of the field
 - `addSuffix`: string to add at the end of the field
+- `redactAs`: Replaces the content of the field with the specified string
   
 If multiple calendars are specified in the configuration list, their events will be merged in the resulting ics feed.
 
