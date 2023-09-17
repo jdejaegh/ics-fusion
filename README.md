@@ -59,15 +59,18 @@ The JSON configuration file should look like the following.
             },
             "name":{
                 "addPrefix":"str",
-                "addSuffix":"str"
+                "addSuffix":"str",
+                "redactAs":"str"
             },
             "description":{
                 "addPrefix":"str",
-                "addSuffix":"str"
+                "addSuffix":"str",
+                "redactAs":"str"
             },
             "location":{
                 "addPrefix":"str",
-                "addSuffix":"str"
+                "addSuffix":"str",
+                "redactAs":"str"
             }
         }
     }

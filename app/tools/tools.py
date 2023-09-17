@@ -422,7 +422,7 @@ def load_cal(entry: dict) -> Calendar:
         else:
             cal = Calendar(imports=r.content.decode())
 
-        cal = horodate(cal, 'Downloaded at')
+        cal = horodate(cal, 'Event last fetched: ')
         return cal
 
 
