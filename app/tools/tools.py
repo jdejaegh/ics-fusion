@@ -348,6 +348,26 @@ def process(path: str, from_cache: bool = True) -> Calendar:
         data = []
 
         for entry in config:
+            if entry.get("conf", False) == True:
+                if entry.get("extends", None) is not None:
+                    try:
+                        o = "app/config/" + sanitize_filename(entry["extends"]) + ".json"
+                        print("Try to open " + o)
+                        file = open(o, "r")
+                        baseConfig = json.loads(file.read())
+                        file.close()
+                        extendingConfig = config
+                        try:
+                            config = merge_json(baseConfig, extendingConfig)
+                        except:
+                            config = extendingConfig
+                        
+                    except:
+                        if entry.get("extendFail", "fail") == "fail":
+                            raise FileNotFoundError("The calendar is not cached")
+                        else:
+                            pass
+                continue
 
             cal = load_cal(entry)
 
@@ -422,7 +442,7 @@ def load_cal(entry: dict) -> Calendar:
         else:
             cal = Calendar(imports=r.content.decode())
 
-        cal = horodate(cal, 'Downloaded at')
+        cal = horodate(cal, 'Event last fetched: ')
         return cal
 
 
@@ -448,3 +468,35 @@ def horodate(cal: Calendar, prefix='') -> Calendar:
             if event.description is not None else prefix + ' ' + now
 
     return cal
+
+def merge_json(base, extention):
+    """Merges two config files by updating the value of base with the values in extention.
+    
+    
+    :param base: the base config file
+    :type base: dict
+    
+    :param extention: the config file to merge with the base
+    :type extention: dict
+    
+    :return: the merged config file
+    :rtype: dict
+    
+    """
+    
+    newJson = base.copy()
+    
+    def update_json(target, source):
+        
+        for key, value in source.items():
+            if isinstance(value, dict) and key in target and isinstance(target[key], dict):
+                update_json(target[key], value)
+            else:
+                target[key] = value
+
+    for dataset in newJson:
+        for dset in extention:
+            if newJson["name"] == dset["name"]:
+                update_json(newJson, dset)
+    
+    return newJson

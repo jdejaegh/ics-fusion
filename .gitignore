@@ -133,6 +133,6 @@ dmypy.json
 app/config/calendar.json
 /app/cache/
 
-#development directories
+# Development directories
 /app/config/
 .vscode
