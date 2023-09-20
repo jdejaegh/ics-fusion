@@ -31,6 +31,11 @@ The JSON configuration file should look like the following.
 ```json
 [
     {
+        "conf": true,
+        "extends": "str",
+        "extendFail": "str",
+    },
+    {
         "url":"str",
         "name":"str",
         "cache": 10,
@@ -104,9 +109,20 @@ Only the `url` and the `name` field are mandatory.
 - `redactAs`: Replaces the content of the field with the specified string
   
 If multiple calendars are specified in the configuration list, their events will be merged in the resulting ics feed.
+The first dataset with {"conf": true,} specifies options that are globally applied to all calenders in the conf. Omit this set to disable. Options
+- `extends`: string specifying the name (excluding .json) of another config file to extend.
+- `extendFail`: string speciying the action to take if an extend fails, either "fail" or "ignore". Default is "fail".
 
 ## Usage
 Once the config file is created, the corresponding HTTP endpoint is accessible.  For example, if the file `app/config/my-calendar.json` contains the configuration, the HTTP endpoint will be `http://localhost:8088/my-calendar`.
+
+A config can extend another config file, to do this the extended config should contain begin with`{
+        "conf": true,
+        "extends": <name of calendar>,
+        "extendFail": "fail",
+    },`
+For an extend to work calendars MUST share the same name between the configs
+An extending config cannot remove data from a base calendar but can modify fields
 
 ## Limitations
 Currently, the application only merges events of the ics feeds, the alarms and todos are not supported.  
