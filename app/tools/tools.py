@@ -348,7 +348,7 @@ def process(path: str, from_cache: bool = True) -> Calendar:
         data = []
 
         for entry in config:
-            if entry.get("conf", False) == True:
+            if entry.get("conf", "no") == "yes":
                 if entry.get("extends", None) is not None:
                     try:
                         o = "app/config/" + sanitize_filename(entry["extends"]) + ".json"

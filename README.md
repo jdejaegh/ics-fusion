@@ -32,7 +32,7 @@ The JSON configuration file should look like the following.
 ```json
 [
     {
-        "conf": true,
+        "conf": "str",
         "extends": "str",
         "extendFail": "str",
     },
@@ -110,7 +110,7 @@ Only the `url` and the `name` field are mandatory.
 - `redactAs`: Replaces the content of the field with the specified string
   
 If multiple calendars are specified in the configuration list, their events will be merged in the resulting ics feed.
-The first dataset with {"conf": true,} specifies options that are globally applied to all calenders in the conf. Omit this set to disable. Options
+The first dataset with {"conf": "yes",} specifies options that are globally applied to all calenders in the conf. Omit this set to disable. Options
 - `extends`: string specifying the name (excluding .json) of another config file to extend.
 - `extendFail`: string speciying the action to take if an extend fails, either "fail" or "ignore". Default is "fail".
 
@@ -118,7 +118,7 @@ The first dataset with {"conf": true,} specifies options that are globally appli
 Once the config file is created, the corresponding HTTP endpoint is accessible.  For example, if the file `app/config/my-calendar.json` contains the configuration, the HTTP endpoint will be `http://localhost:8088/my-calendar`.
 
 A config can extend another config file, to do this the extended config should contain begin with`{
-        "conf": true,
+        "conf": "yes",
         "extends": <name of calendar>,
         "extendFail": "fail",
     },`
