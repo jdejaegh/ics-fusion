@@ -1,4 +1,5 @@
 # ICS Fusion  
+Forked from [https://github.com/jdejaegh/ics-fusion](https://github.com/jdejaegh/ics-fusion)
 ## Introduction
 ICS Fusion is a tool to merge multiple ics feed into a single ics calendar. Filters and modifications may be applied on the incoming feeds.  The resulting ics can be accessed via an HTTP endpoint.
 
