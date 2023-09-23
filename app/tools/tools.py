@@ -196,9 +196,16 @@ def modify_time(cal: Calendar, modify: dict) -> Calendar:
         hour = 0 if not ("hour" in shift) else shift["hour"]
         minute = 0 if not ("minute" in shift) else shift["minute"]
 
-        for event in cal.events:
-            event.end = event.end.shift(years=year, months=month, days=day, hours=hour, minutes=minute)
-            event.begin = event.begin.shift(years=year, months=month, days=day, hours=hour, minutes=minute)
+        shift_minutes = (year * 365 * 24 * 60) + (month * 30 * 24 * 60) + (day * 24 * 60) + (hour * 60) + minute
+        
+        if shift_minutes > 0:
+            for event in cal.events:
+                event.end = event.end.shift(minutes=shift_minutes)
+                event.begin = event.begin.shift(minutes=shift_minutes)
+        elif shift_minutes < 0:
+            for event in cal.events:
+                event.begin = event.begin.shift(minutes=shift_minutes)
+                event.end = event.end.shift(minutes=shift_minutes)
 
     return cal
 
