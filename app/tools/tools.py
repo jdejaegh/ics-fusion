@@ -346,29 +346,31 @@ def process(path: str, from_cache: bool = True) -> Calendar:
         file.close()
 
         data = []
-
-        for entry in config:
-            if entry.get("conf", "no") == "yes":
-                if entry.get("extends", None) is not None:
+        
+    for entry in config:
+        if "conf" in entry:
+            if entry.get("extends", None) is not None:
+                try:
+                    o = "app/config/" + sanitize_filename(entry["extends"]) + ".json"
+                    print("Try to open " + o)
+                    file = open(o, "r")
+                    baseConfig = json.loads(file.read())
+                    file.close()
+                    extendingConfig = config
                     try:
-                        o = "app/config/" + sanitize_filename(entry["extends"]) + ".json"
-                        print("Try to open " + o)
-                        file = open(o, "r")
-                        baseConfig = json.loads(file.read())
-                        file.close()
-                        extendingConfig = config
-                        try:
-                            config = merge_json(baseConfig, extendingConfig)
-                        except:
-                            config = extendingConfig
-                        
+                        config = merge_json(baseConfig, extendingConfig)
                     except:
-                        if entry.get("extendFail", "fail") == "fail":
-                            raise FileNotFoundError("The calendar is not cached")
-                        else:
-                            pass
-                continue
+                        config = extendingConfig
+                    
+                except:
+                    if entry.get("extendFail", "fail") == "fail":
+                        raise FileNotFoundError("The calendar is not cached")
+                    else:
+                        pass
+        
 
+    for entry in config:
+        if "conf" not in entry:
             cal = load_cal(entry)
 
             if "filters" in entry:
@@ -379,7 +381,7 @@ def process(path: str, from_cache: bool = True) -> Calendar:
 
             data.append(cal)
 
-        return merge(data)
+    return merge(data)
 
 
 def get_from_cache(entry: dict) -> Calendar:
@@ -469,34 +471,33 @@ def horodate(cal: Calendar, prefix='') -> Calendar:
 
     return cal
 
-def merge_json(base, extention):
-    """Merges two config files by updating the value of base with the values in extention.
-    
-    
+def merge_json(base, extension):
+    """Merges two config files by updating the value of base with the values in extension.
+
     :param base: the base config file
     :type base: dict
-    
-    :param extention: the config file to merge with the base
-    :type extention: dict
-    
+
+    :param extension: the config file to merge with the base
+    :type extension: dict
+
     :return: the merged config file
     :rtype: dict
-    
     """
-    
-    newJson = base.copy()
-    
-    def update_json(target, source):
-        
-        for key, value in source.items():
-            if isinstance(value, dict) and key in target and isinstance(target[key], dict):
-                update_json(target[key], value)
-            else:
-                target[key] = value
 
-    for dataset in newJson:
-        for dset in extention:
-            if newJson["name"] == dset["name"]:
-                update_json(newJson, dset)
-    
-    return newJson
+    new_json = base.copy()
+
+    def update_json(base_set, updates):
+        for key, value in updates.items():
+            if not key == "conf":
+                if isinstance(value, dict) and key in base_set and isinstance(base_set[key], dict):
+                    update_json(base_set[key], value)
+                else:
+                    base_set[key] = value
+
+    for base_dataset in new_json:
+        if "conf" not in base_dataset:
+            for ext_dataset in extension:
+                if base_dataset.get("name") == ext_dataset.get("name"):
+                    update_json(base_dataset, ext_dataset)
+
+    return new_json
